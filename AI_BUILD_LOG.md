@@ -67,7 +67,7 @@ Honest record of how this project was built, in compliance with hackathon transp
 
 Every on-chain claim in this project can be independently verified:
 - Polymarket wallet: `0xa31232040883e551E0390B0c621f1e689b0b8814` on Polygon
-- BountyLedger contract: *(address TBD after deployment)* on opBNB
+- BountyLedger contract: `0x79dA38701c10CfC4ec05fF2DFf758CB4e55349C7` on opBNB
 - Trade history: Each `logActivity()` call has a verifiable tx hash on opBNBScan
 
 No synthetic data. No mock APIs. No fake screenshots.

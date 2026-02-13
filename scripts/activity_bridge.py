@@ -73,6 +73,8 @@ class ActivityBridge:
             address=Web3.to_checksum_address(self.contract_addr), abi=abi
         )
 
+        self.nonce = self.w3.eth.get_transaction_count(self.account.address)
+
         bal = self.w3.eth.get_balance(self.account.address)
         log(f"Wallet: {self.account.address}")
         log(f"Contract: {self.contract_addr}")
@@ -82,7 +84,7 @@ class ActivityBridge:
         try:
             tx = fn.build_transaction({
                 "from": self.account.address,
-                "nonce": self.w3.eth.get_transaction_count(self.account.address),
+                "nonce": self.nonce,
                 "gas": 500_000,
                 "gasPrice": self.w3.eth.gas_price,
                 "chainId": OPBNB_CHAIN_ID,
@@ -90,6 +92,7 @@ class ActivityBridge:
             signed = self.account.sign_transaction(tx)
             tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
+            self.nonce += 1
             return receipt.transactionHash.hex()
         except Exception as e:
             log(f"  TX failed: {e}")

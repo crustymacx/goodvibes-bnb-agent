@@ -8,7 +8,7 @@
 |------|-------|-------|
 | **9 Polymarket positions** | Polygon | [Wallet on PolygonScan](https://polygonscan.com/address/0xa31232040883e551E0390B0c621f1e689b0b8814) |
 | **$41 invested, ~$115 payout** | Polygon CLOB | Live positions on Polymarket |
-| **BountyLedger contract** | opBNB | [View on opBNBScan](#) *(address after deploy)* |
+| **BountyLedger contract** | opBNB | [View on opBNBScan](https://opbnbscan.com/address/0x79dA38701c10CfC4ec05fF2DFf758CB4e55349C7) |
 | **Cross-chain activity log** | opBNB | Every trade, forecast, and bounty logged on-chain |
 | **76 installed skills** | Local | `openclaw skills list` |
 | **7 active cron jobs** | Local | `openclaw cron list` |
