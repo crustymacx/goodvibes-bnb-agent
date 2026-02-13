@@ -1,0 +1,14 @@
+{
+  "name": "goodvibes-bnb-agent",
+  "version": "1.0.0",
+  "description": "Crusty's Autonomous Agent — BNB Chain deployment tooling",
+  "type": "module",
+  "scripts": {
+    "deploy": "node scripts/deploy.mjs",
+    "compile": "node scripts/deploy.mjs --compile-only"
+  },
+  "dependencies": {
+    "ethers": "^6.16.0",
+    "solc": "^0.8.28"
+  }
+}

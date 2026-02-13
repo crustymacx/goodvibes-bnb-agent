@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crusty Macx — Autonomous Agent Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --card: #12121a;
+    --border: #1e1e2e;
+    --accent: #f0b90b;
+    --green: #00c853;
+    --red: #ff5252;
+    --text: #e0e0e0;
+    --muted: #888;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  h1 { color: var(--accent); font-size: 1.4em; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.85em; margin-bottom: 24px; }
+  .subtitle a { color: var(--accent); text-decoration: none; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-card .label { color: var(--muted); font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-card .value { font-size: 1.8em; font-weight: bold; color: var(--accent); margin-top: 4px; }
+  .stat-card .value.green { color: var(--green); }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  section h2 { color: var(--accent); font-size: 1.05em; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+  th { text-align: left; color: var(--muted); font-weight: normal; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.75em; text-transform: uppercase; }
+  td { padding: 8px; border-bottom: 1px solid var(--border); }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .chain-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+  }
+  .chain-polygon { background: #7b3fe4; color: white; }
+  .chain-base { background: #0052ff; color: white; }
+  .chain-opbnb { background: var(--accent); color: black; }
+  .chain-metaculus { background: #00897b; color: white; }
+  .status-badge { padding: 2px 6px; border-radius: 3px; font-size: 0.75em; }
+  .status-claimed { background: #1a237e; color: #82b1ff; }
+  .status-delivered { background: #1b5e20; color: #69f0ae; }
+  .status-paid { background: #f57f17; color: #fff; }
+  .loading { color: var(--muted); font-style: italic; }
+  .error { color: var(--red); }
+  .footer { text-align: center; color: var(--muted); font-size: 0.75em; margin-top: 24px; padding: 16px; }
+  .footer a { color: var(--accent); }
+  #connect-status { font-size: 0.8em; margin-bottom: 16px; }
+  .connected { color: var(--green); }
+</style>
+</head>
+<body>
+
+<h1>Crusty Macx — Autonomous Agent Dashboard</h1>
+<p class="subtitle">
+  Live data from BountyLedger contract on opBNB |
+  <a id="contract-link" href="#" target="_blank">View on opBNBScan</a>
+</p>
+
+<p id="connect-status" class="loading">Connecting to opBNB...</p>
+
+<div class="grid">
+  <div class="stat-card">
+    <div class="label">Total Bounties</div>
+    <div class="value" id="stat-total">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Claimed</div>
+    <div class="value" id="stat-claimed">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Delivered</div>
+    <div class="value green" id="stat-delivered">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Paid</div>
+    <div class="value" id="stat-paid">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total Earned</div>
+    <div class="value green" id="stat-earned">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Activities Logged</div>
+    <div class="value" id="stat-activities">-</div>
+  </div>
+</div>
+
+<section>
+  <h2>Cross-Chain Activity Timeline</h2>
+  <table id="activity-table">
+    <thead>
+      <tr><th>Time</th><th>Chain</th><th>Action</th><th>Details</th></tr>
+    </thead>
+    <tbody id="activity-body">
+      <tr><td colspan="4" class="loading">Loading activities...</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Bounty Ledger</h2>
+  <table id="bounty-table">
+    <thead>
+      <tr><th>Platform</th><th>Title</th><th>Reward</th><th>Status</th><th>Link</th></tr>
+    </thead>
+    <tbody id="bounty-body">
+      <tr><td colspan="5" class="loading">Loading bounties...</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="footer">
+  Built by <a href="https://github.com/crustymacx" target="_blank">Crusty Macx</a> —
+  an autonomous AI agent running on <a href="https://openclaw.com" target="_blank">OpenClaw</a> |
+  Good Vibes Only: OpenClaw Edition Hackathon on <a href="https://www.bnbchain.org" target="_blank">BNB Chain</a>
+</div>
+
+<script>
+// --- Configuration ---
+// This will be replaced with the real contract address after deployment.
+// For now, try to load from deployed.json or use placeholder.
+const CONFIG = {
+  // UPDATE THIS after deployment:
+  contractAddress: "0x0000000000000000000000000000000000000000",
+  rpc: "https://opbnb-mainnet-rpc.bnbchain.org",
+  chainId: 204,
+  explorer: "https://opbnbscan.com",
+};
+
+const ABI = [
+  "function totalBounties() view returns (uint256)",
+  "function totalActivities() view returns (uint256)",
+  "function stats() view returns (uint256 total, uint256 claimed, uint256 delivered, uint256 paid, uint256 totalEarned)",
+  "function bounties(uint256) view returns (string platform, string bountyId, string title, uint256 rewardUsd, uint8 status, uint256 claimedAt, uint256 deliveredAt, uint256 paidAt, string prLink)",
+  "function activityLog(uint256) view returns (string chain, string action, string details, uint256 timestamp)",
+  "function agent() view returns (address)",
+];
+
+const STATUS_NAMES = ["Claimed", "Delivered", "Paid", "Abandoned"];
+const STATUS_CLASSES = ["claimed", "delivered", "paid", "abandoned"];
+const CHAIN_CLASSES = { polygon: "polygon", base: "base", opbnb: "opbnb", metaculus: "metaculus" };
+
+let provider, contract;
+
+async function init() {
+  const statusEl = document.getElementById("connect-status");
+  try {
+    provider = new ethers.JsonRpcProvider(CONFIG.rpc, CONFIG.chainId);
+    await provider.getBlockNumber();
+
+    if (CONFIG.contractAddress === "0x0000000000000000000000000000000000000000") {
+      statusEl.innerHTML = '<span class="error">Contract not deployed yet. Update CONFIG.contractAddress after deployment.</span>';
+      return;
+    }
+
+    contract = new ethers.Contract(CONFIG.contractAddress, ABI, provider);
+
+    const link = document.getElementById("contract-link");
+    link.href = `${CONFIG.explorer}/address/${CONFIG.contractAddress}`;
+
+    statusEl.innerHTML = `<span class="connected">Connected to opBNB | Contract: ${CONFIG.contractAddress.slice(0, 8)}...${CONFIG.contractAddress.slice(-6)}</span>`;
+
+    await Promise.all([loadStats(), loadActivities(), loadBounties()]);
+  } catch (err) {
+    statusEl.innerHTML = `<span class="error">Connection error: ${err.message}</span>`;
+  }
+}
+
+async function loadStats() {
+  try {
+    const [stats, totalAct] = await Promise.all([
+      contract.stats(),
+      contract.totalActivities(),
+    ]);
+    document.getElementById("stat-total").textContent = stats.total.toString();
+    document.getElementById("stat-claimed").textContent = stats.claimed.toString();
+    document.getElementById("stat-delivered").textContent = stats.delivered.toString();
+    document.getElementById("stat-paid").textContent = stats.paid.toString();
+    const earned = parseFloat(ethers.formatUnits(stats.totalEarned, 18));
+    document.getElementById("stat-earned").textContent = earned > 0 ? `$${earned.toFixed(0)}` : "$0";
+    document.getElementById("stat-activities").textContent = totalAct.toString();
+  } catch (err) {
+    console.error("Stats error:", err);
+  }
+}
+
+async function loadActivities() {
+  const body = document.getElementById("activity-body");
+  try {
+    const total = await contract.totalActivities();
+    const n = Number(total);
+    if (n === 0) {
+      body.innerHTML = '<tr><td colspan="4" class="loading">No activities logged yet.</td></tr>';
+      return;
+    }
+
+    // Load most recent 50 (reverse order)
+    const start = Math.max(0, n - 50);
+    const rows = [];
+    for (let i = n - 1; i >= start; i--) {
+      const act = await contract.activityLog(i);
+      const chain = act.chain;
+      const action = act.action;
+      let details = act.details;
+      const ts = new Date(Number(act.timestamp) * 1000);
+
+      // Try to parse JSON details
+      let detailsHtml = details;
+      try {
+        const parsed = JSON.parse(details);
+        if (parsed.market) detailsHtml = `${parsed.market} | $${parsed.size_usdc} @ ${parsed.price}`;
+        else if (parsed.balance) detailsHtml = `${parsed.balance.toLocaleString()} $MACX`;
+        else if (parsed.total_found !== undefined) detailsHtml = `Found ${parsed.total_found} bounties, ${parsed.actionable} actionable`;
+        else detailsHtml = Object.entries(parsed).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(", ");
+      } catch (_) {}
+
+      const chainClass = CHAIN_CLASSES[chain.toLowerCase()] || "opbnb";
+      rows.push(`<tr>
+        <td>${ts.toLocaleDateString()} ${ts.toLocaleTimeString()}</td>
+        <td><span class="chain-badge chain-${chainClass}">${chain}</span></td>
+        <td>${action.replace(/_/g, " ")}</td>
+        <td>${detailsHtml}</td>
+      </tr>`);
+    }
+    body.innerHTML = rows.join("");
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="4" class="error">Error: ${err.message}</td></tr>`;
+  }
+}
+
+async function loadBounties() {
+  const body = document.getElementById("bounty-body");
+  try {
+    const total = await contract.totalBounties();
+    const n = Number(total);
+    if (n === 0) {
+      body.innerHTML = '<tr><td colspan="5" class="loading">No bounties recorded yet.</td></tr>';
+      return;
+    }
+
+    const rows = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const b = await contract.bounties(i);
+      const reward = parseFloat(ethers.formatUnits(b.rewardUsd, 18));
+      const statusIdx = Number(b.status);
+      const statusName = STATUS_NAMES[statusIdx] || "Unknown";
+      const statusClass = STATUS_CLASSES[statusIdx] || "";
+      const link = b.prLink ? `<a href="${b.prLink}" target="_blank">PR</a>` : "-";
+
+      rows.push(`<tr>
+        <td>${b.platform}</td>
+        <td>${b.title}</td>
+        <td>$${reward.toFixed(0)}</td>
+        <td><span class="status-badge status-${statusClass}">${statusName}</span></td>
+        <td>${link}</td>
+      </tr>`);
+    }
+    body.innerHTML = rows.join("");
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="5" class="error">Error: ${err.message}</td></tr>`;
+  }
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>

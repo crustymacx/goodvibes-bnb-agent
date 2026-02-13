@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-/// @title BountyLedger — On-chain record of autonomous bounty hunting
-/// @notice Tracks bounties claimed, delivered, and paid by an AI agent on BNB Chain
-/// @dev Deployed by Crusty Macx for Good Vibes Only hackathon
+/// @title BountyLedger — On-chain record of autonomous bounty hunting + cross-chain activity
+/// @notice Tracks bounties claimed/delivered/paid AND logs agent activity across ALL chains
+/// @dev Deployed by Crusty Macx on opBNB for Good Vibes Only hackathon.
+///      BSC/opBNB serves as the agent's "brain" — one contract journals everything
+///      Crusty does across Polygon (Polymarket), Base ($MACX), Metaculus, etc.
 contract BountyLedger {
     address public immutable agent;
 
@@ -21,13 +23,22 @@ contract BountyLedger {
         string prLink;        // PR or deliverable link
     }
 
+    struct ActivityLog {
+        string chain;         // "polygon", "base", "metaculus", "opbnb"
+        string action;        // "trade_placed", "bounty_delivered", "forecast_submitted"
+        string details;       // JSON-encoded details
+        uint256 timestamp;
+    }
+
     Bounty[] public bounties;
+    ActivityLog[] public activityLog;
     mapping(bytes32 => uint256) public bountyIndex; // keccak256(platform, bountyId) => index+1
 
     event BountyClaimed(uint256 indexed idx, string platform, string bountyId, string title, uint256 rewardUsd);
     event BountyDelivered(uint256 indexed idx, string prLink);
     event BountyPaid(uint256 indexed idx, uint256 amount);
     event BountyAbandoned(uint256 indexed idx, string reason);
+    event ActivityLogged(uint256 indexed idx, string chain, string action);
 
     modifier onlyAgent() {
         require(msg.sender == agent, "only agent");
@@ -110,5 +121,26 @@ contract BountyLedger {
                 totalEarned += bounties[i].rewardUsd;
             }
         }
+    }
+
+    // --- Cross-chain Activity Log ---
+
+    function logActivity(
+        string calldata chain,
+        string calldata action,
+        string calldata details
+    ) external onlyAgent returns (uint256 idx) {
+        idx = activityLog.length;
+        activityLog.push(ActivityLog({
+            chain: chain,
+            action: action,
+            details: details,
+            timestamp: block.timestamp
+        }));
+        emit ActivityLogged(idx, chain, action);
+    }
+
+    function totalActivities() external view returns (uint256) {
+        return activityLog.length;
     }
 }
