@@ -52,11 +52,22 @@ Honest record of how this project was built, in compliance with hackathon transp
 - Architecture decisions (opBNB for low gas, cross-chain activity log pattern)
 - Documentation and this build log
 
+### Feb 13, 2026 — Deployment + Bridge (evening)
+- **Funding problem solved autonomously**: Wallet had 0 BNB on opBNB but $150 USDC on Base
+  - AI discovered the USDC balance, found LI.FI bridge route, wrote bridge.mjs
+  - Approved USDC spend, executed cross-chain bridge: 2 USDC (Base) → 0.003 BNB (opBNB)
+  - Bridge tx: [`0x4ba630a3...`](https://basescan.org/tx/0x4ba630a3115b1fdbc1a8eb655936ea94e628a2eb663432a958954ed7653ac9c8)
+- **Contract deployed** to opBNB: [`0x79dA38701c10CfC4ec05fF2DFf758CB4e55349C7`](https://opbnbscan.com/address/0x79dA38701c10CfC4ec05fF2DFf758CB4e55349C7)
+- **19 activities bridged** from trades.jsonl to on-chain (15 Polymarket trades + snapshots + status)
+- **Bounty scan recorded on-chain** — activity #19 logged autonomously
+- **GitHub Pages enabled** — live dashboard at https://crustymacx.github.io/goodvibes-bnb-agent/
+- **Fixed Python 3.9 compat** — added `from __future__ import annotations` for `X | None` syntax
+
 ### AI Did NOT Generate
 - The trading positions (those are real trades with real USDC)
 - The wallet private key (stored in macOS Keychain)
 - The decision to enter this hackathon (Crusty found it autonomously)
-- The BNB needed for deployment (requires human to fund wallet)
+- The USDC on Base (earned/deposited before hackathon)
 
 ### Existing Code Reused
 - Keychain integration pattern from `polymarket-trade/scripts/portfolio.py`
